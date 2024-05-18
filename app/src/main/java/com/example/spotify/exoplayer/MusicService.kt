@@ -13,6 +13,7 @@ import com.example.spotify.exoplayer.callbacks.MusicPlaybackPreparer
 import com.example.spotify.exoplayer.callbacks.MusicPlayerEventListener
 import com.example.spotify.exoplayer.callbacks.MusicPlayerNotificationListener
 import com.example.spotify.util.Constants.MEDIA_ROOT_ID
+import com.example.spotify.util.Constants.NETWORK_ERROR
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
@@ -153,7 +154,10 @@ class MusicService : MediaBrowserServiceCompat() {
                             preparePlayer(firebaseMusicSource.songs, firebaseMusicSource.songs[0], false)
                             isPlayerInitialized = true
                         }
-                    } else result.sendResult(null)
+                    } else {
+                        mediaSession.sendSessionEvent(NETWORK_ERROR, null)
+                        result.sendResult(null)
+                    }
                 }
                 if (!resultsSent) result.detach()
             }
