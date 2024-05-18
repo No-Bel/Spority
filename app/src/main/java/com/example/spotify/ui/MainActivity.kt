@@ -1,9 +1,10 @@
-package com.example.spotify
+package com.example.spotify.ui
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.RequestManager
+import com.example.spotify.R
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
