@@ -1,7 +1,6 @@
-package com.example.spotify.ui.viewmodels
+package com.example.spotify.ui.viewmodel
 
 import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.MediaMetadataCompat.METADATA_KEY_MEDIA_ID
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
