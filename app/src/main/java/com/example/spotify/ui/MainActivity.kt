@@ -1,16 +1,23 @@
 package com.example.spotify.ui
 
 import android.os.Bundle
+import android.support.v4.media.session.PlaybackStateCompat
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback
 import com.bumptech.glide.RequestManager
+import com.example.spotify.R
 import com.example.spotify.adapter.SwipeSongAdapter
 import com.example.spotify.data.entities.Song
 import com.example.spotify.databinding.ActivityMainBinding
 import com.example.spotify.ui.viewmodel.MainViewModel
-import com.example.spotify.util.Status.*
+import com.example.spotify.util.Status.ERROR
+import com.example.spotify.util.Status.LOADING
+import com.example.spotify.util.Status.SUCCESS
+import com.example.spotify.util.extensions.isPlaying
 import com.example.spotify.util.extensions.toSong
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -29,14 +36,41 @@ class MainActivity : AppCompatActivity() {
 
     private var curPlayingSong: Song? = null
 
+    private var playbackState: PlaybackStateCompat? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.vpSong.adapter = swipeSongAdapter
+        init()
         subscribeToObservers()
+        setListeners()
+        setupPager()
+    }
+
+    private fun setupPager() {
+        binding.vpSong.registerOnPageChangeCallback(object : OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                if (playbackState?.isPlaying == true) {
+                    mainViewModel.playOrToggleSong(swipeSongAdapter.songs[position])
+                } else curPlayingSong = swipeSongAdapter.songs[position]
+            }
+        })
+    }
+
+    private fun setListeners() {
+        binding.ivPlayPause.setOnClickListener {
+            curPlayingSong?.let {
+                mainViewModel.playOrToggleSong(it, true)
+            }
+        }
+    }
+
+    private fun init() {
+        binding.vpSong.adapter = swipeSongAdapter
     }
 
     private fun switchViewPagerToCurrentSong(song: Song) {
@@ -50,16 +84,18 @@ class MainActivity : AppCompatActivity() {
     private fun subscribeToObservers() {
         mainViewModel.mediaItems.observe(this) {
             it?.let { result ->
-                when(result.status) {
+                when (result.status) {
                     SUCCESS -> {
                         result.data?.let { songs ->
                             swipeSongAdapter.songs = songs
                             if (songs.isNotEmpty()) {
-                                glide.load((curPlayingSong ?: songs[0]).imageUrl).into(binding.ivCurSongImage)
+                                glide.load((curPlayingSong ?: songs[0]).imageUrl)
+                                    .into(binding.ivCurSongImage)
                             }
                             switchViewPagerToCurrentSong(curPlayingSong ?: return@observe)
                         }
                     }
+
                     ERROR -> Unit
                     LOADING -> Unit
                 }
@@ -72,6 +108,45 @@ class MainActivity : AppCompatActivity() {
             curPlayingSong = it.toSong()
             glide.load(curPlayingSong?.imageUrl).into(binding.ivCurSongImage)
             switchViewPagerToCurrentSong(curPlayingSong ?: return@observe)
+        }
+
+        mainViewModel.playbackState.observe(this) {
+            playbackState = it
+            binding.ivPlayPause.setImageResource(
+                if (playbackState?.isPlaying == true) R.drawable.ic_pause else R.drawable.ic_play
+            )
+        }
+
+        mainViewModel.isConnected.observe(this) {
+            it?.getContentIfNotHandled()?.let { result ->
+                when (result.status) {
+                    ERROR -> {
+                        Snackbar.make(
+                            binding.root,
+                            result.message ?: "An unknown error occured",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    else -> Unit
+                }
+            }
+        }
+
+        mainViewModel.networkError.observe(this) {
+            it?.getContentIfNotHandled()?.let { result ->
+                when (result.status) {
+                    ERROR -> {
+                        Snackbar.make(
+                            binding.root,
+                            result.message ?: "An unknown error occured",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    else -> Unit
+                }
+            }
         }
     }
 }
