@@ -1,4 +1,4 @@
-package com.example.spotify.exoplayer
+package com.example.spotify.util.extensions
 
 import android.support.v4.media.session.PlaybackStateCompat
 
