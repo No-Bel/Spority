@@ -5,6 +5,8 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
+import androidx.navigation.findNavController
 import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback
 import com.bumptech.glide.RequestManager
 import com.example.spotify.R
@@ -15,8 +17,11 @@ import com.example.spotify.ui.viewmodel.MainViewModel
 import com.example.spotify.util.Status.ERROR
 import com.example.spotify.util.Status.LOADING
 import com.example.spotify.util.Status.SUCCESS
+import com.example.spotify.util.extensions.hide
 import com.example.spotify.util.extensions.isPlaying
+import com.example.spotify.util.extensions.show
 import com.example.spotify.util.extensions.toSong
+import com.example.spotify.util.extensions.visibility
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -67,10 +72,35 @@ class MainActivity : AppCompatActivity() {
                 mainViewModel.playOrToggleSong(it, true)
             }
         }
+
+        swipeSongAdapter.setItemClickListener {
+            binding.navHostFragment.findNavController().navigate(
+                R.id.globalActionToSongFragment
+            )
+        }
+
+        binding.navHostFragment.findNavController().addOnDestinationChangedListener { _, desdination, _ ->
+            when(desdination.id) {
+                R.id.songFragment -> {
+                    bottomBarVisibility(false)
+                }
+                R.id.homeFragment -> {
+                    bottomBarVisibility(true)
+                }
+                else -> bottomBarVisibility(true)
+            }
+
+        }
     }
 
     private fun init() {
         binding.vpSong.adapter = swipeSongAdapter
+    }
+
+    private fun bottomBarVisibility(isVisible: Boolean) {
+        binding.ivCurSongImage.visibility(isVisible)
+        binding.vpSong.visibility(isVisible)
+        binding.ivPlayPause.visibility(isVisible)
     }
 
     private fun switchViewPagerToCurrentSong(song: Song) {
